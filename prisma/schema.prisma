@@ -1,0 +1,457 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// ============================================
+// ENUMS
+// ============================================
+
+enum UserRole {
+  OWNER
+  ADMIN
+  MEMBER
+
+  @@map("user_role")
+}
+
+enum SubscriptionTier {
+  FREE
+  PRO
+  AGENCY
+
+  @@map("subscription_tier")
+}
+
+enum SubscriptionStatus {
+  INCOMPLETE
+  INCOMPLETE_EXPIRED
+  TRIALING
+  ACTIVE
+  PAST_DUE
+  CANCELED
+  UNPAID
+  PAUSED
+
+  @@map("subscription_status")
+}
+
+enum Platform {
+  INSTAGRAM
+  TIKTOK
+  TWITTER
+  LINKEDIN
+  FACEBOOK
+  YOUTUBE
+
+  @@map("platform")
+}
+
+enum AnalysisType {
+  COMPETITOR_ANALYSIS
+  HASHTAG_PERFORMANCE
+  CONTENT_TRENDS
+  ENGAGEMENT_REPORT
+  GROWTH_FORECAST
+
+  @@map("analysis_type")
+}
+
+enum ReportStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+
+  @@map("report_status")
+}
+
+// ============================================
+// USER & AUTHENTICATION (NextAuth.js)
+// ============================================
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String  @map("user_id")
+  type              String
+  provider          String
+  providerAccountId String  @map("provider_account_id")
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@index([userId])
+  @@map("accounts")
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique @map("session_token")
+  userId       String   @map("user_id")
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("sessions")
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+  @@map("verification_tokens")
+}
+
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String    @unique
+  emailVerified DateTime? @map("email_verified")
+  image         String?
+  createdAt     DateTime  @default(now()) @map("created_at")
+  updatedAt     DateTime  @updatedAt @map("updated_at")
+
+  // Relations
+  accounts        Account[]
+  sessions        Session[]
+  ownedWorkspaces Workspace[]        @relation("WorkspaceOwner")
+  memberships     WorkspaceMember[]
+  usageLogs       UsageLog[]
+  createdReports  AnalysisReport[]
+
+  @@map("users")
+}
+
+// ============================================
+// WORKSPACE & MULTI-TENANCY
+// ============================================
+
+model Workspace {
+  id          String   @id @default(cuid())
+  name        String
+  slug        String   @unique
+  description String?
+  logoUrl     String?  @map("logo_url")
+  website     String?
+  isActive    Boolean  @default(true) @map("is_active")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  ownerId    String              @map("owner_id")
+  owner      User                @relation("WorkspaceOwner", fields: [ownerId], references: [id], onDelete: Cascade)
+  members    WorkspaceMember[]
+  subscription Subscription?
+  competitors Competitor[]
+  hashtagTracks HashtagTrack[]
+  scrapedPosts ScrapedPost[]
+  analysisReports AnalysisReport[]
+  usageLogs   UsageLog[]
+  auditLogs   AuditLog[]
+
+  @@index([ownerId])
+  @@index([slug])
+  @@index([isActive])
+  @@map("workspaces")
+}
+
+model WorkspaceMember {
+  id        String   @id @default(cuid())
+  role      UserRole @default(MEMBER)
+  joinedAt  DateTime @default(now()) @map("joined_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  workspaceId String    @map("workspace_id")
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  userId      String    @map("user_id")
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([workspaceId, userId])
+  @@index([workspaceId])
+  @@index([userId])
+  @@index([role])
+  @@map("workspace_members")
+}
+
+// ============================================
+// SUBSCRIPTION & BILLING (Stripe Ready)
+// ============================================
+
+model Subscription {
+  id                   String             @id @default(cuid())
+  tier                 SubscriptionTier   @default(FREE)
+  status               SubscriptionStatus @default(INCOMPLETE)
+  
+  // Stripe Integration Fields
+  stripeCustomerId     String?            @unique @map("stripe_customer_id")
+  stripeSubscriptionId String?            @unique @map("stripe_subscription_id")
+  stripePriceId        String?            @map("stripe_price_id")
+  
+  // Billing Period
+  currentPeriodStart   DateTime?          @map("current_period_start")
+  currentPeriodEnd     DateTime?          @map("current_period_end")
+  trialStartsAt        DateTime?          @map("trial_starts_at")
+  trialEndsAt          DateTime?          @map("trial_ends_at")
+  
+  // Usage Limits (based on tier)
+  maxCompetitors       Int                @default(3) @map("max_competitors")
+  maxHashtagTracks     Int                @default(5) @map("max_hashtag_tracks")
+  maxScrapedPosts      Int                @default(1000) @map("max_scraped_posts")
+  maxAnalysisReports   Int                @default(10) @map("max_analysis_reports")
+  maxTeamMembers       Int                @default(1) @map("max_team_members")
+  
+  // Usage Tracking (reset monthly)
+  usedCompetitorSlots  Int                @default(0) @map("used_competitor_slots")
+  usedHashtagTracks    Int                @default(0) @map("used_hashtag_tracks")
+  usedScrapedPosts     Int                @default(0) @map("used_scraped_posts")
+  usedAnalysisReports  Int                @default(0) @map("used_analysis_reports")
+  
+  cancelAtPeriodEnd    Boolean            @default(false) @map("cancel_at_period_end")
+  canceledAt           DateTime?          @map("canceled_at")
+  
+  createdAt            DateTime           @default(now()) @map("created_at")
+  updatedAt            DateTime           @updatedAt @map("updated_at")
+
+  // Relations
+  workspaceId String    @unique @map("workspace_id")
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@index([stripeCustomerId])
+  @@index([stripeSubscriptionId])
+  @@index([status])
+  @@index([tier])
+  @@map("subscriptions")
+}
+
+// ============================================
+// CORE FEATURES: COMPETITOR TRACKING
+// ============================================
+
+model Competitor {
+  id          String   @id @default(cuid())
+  platform    Platform
+  handle      String   // Username/handle on the platform
+  displayName String?  @map("display_name")
+  profileUrl  String   @map("profile_url")
+  avatarUrl   String?  @map("avatar_url")
+  bio         String?
+  followerCount Int    @default(0) @map("follower_count")
+  followingCount Int   @default(0) @map("following_count")
+  postCount   Int      @default(0) @map("post_count")
+  isActive    Boolean  @default(true) @map("is_active")
+  lastSyncedAt DateTime? @map("last_synced_at")
+  metadata    Json?    // Platform-specific data
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  workspaceId String    @map("workspace_id")
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  scrapedPosts ScrapedPost[]
+
+  @@unique([workspaceId, platform, handle])
+  @@index([workspaceId])
+  @@index([platform])
+  @@index([isActive])
+  @@index([lastSyncedAt])
+  @@map("competitors")
+}
+
+// ============================================
+// CORE FEATURES: HASHTAG TRACKING
+// ============================================
+
+model HashtagTrack {
+  id            String   @id @default(cuid())
+  tag           String   // Without the # symbol
+  platform      Platform
+  description   String?
+  postCount     Int      @default(0) @map("post_count")
+  avgEngagement Float?   @map("avg_engagement")
+  trendingScore Float?   @map("trending_score")
+  isActive      Boolean  @default(true) @map("is_active")
+  lastSyncedAt  DateTime? @map("last_synced_at")
+  metadata      Json?    // Platform-specific hashtag data
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  workspaceId String    @map("workspace_id")
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@unique([workspaceId, platform, tag])
+  @@index([workspaceId])
+  @@index([platform])
+  @@index([isActive])
+  @@index([trendingScore])
+  @@map("hashtag_tracks")
+}
+
+// ============================================
+// CORE FEATURES: SCRAPED CONTENT
+// ============================================
+
+model ScrapedPost {
+  id               String   @id @default(cuid())
+  platformPostId   String   @map("platform_post_id") // Original ID from platform
+  platform         Platform
+  contentType      String   @map("content_type") // image, video, carousel, reel, etc.
+  caption          String?
+  mediaUrls        Json     @map("media_urls")  // Array of URLs stored as JSON
+  permalink        String?
+  
+  // Engagement Metrics
+  likesCount       Int      @default(0) @map("likes_count")
+  commentsCount    Int      @default(0) @map("comments_count")
+  sharesCount      Int      @default(0) @map("shares_count")
+  viewsCount       Int      @default(0) @map("views_count")
+  engagementRate   Float?   @map("engagement_rate")
+  
+  // Metadata
+  postedAt         DateTime @map("posted_at")
+  hashtags         Json     // Array stored as JSON
+  mentions         Json     // Array stored as JSON
+  isSponsored      Boolean  @default(false) @map("is_sponsored")
+  metadata         Json?    // Platform-specific data (dimensions, duration, etc.)
+  
+  // AI Analysis Results
+  sentimentScore   Float?   @map("sentiment_score")
+  topics           Json     // Array stored as JSON
+  keywords         Json     // Array stored as JSON
+  
+  createdAt        DateTime @default(now()) @map("created_at")
+  updatedAt        DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  workspaceId  String     @map("workspace_id")
+  workspace    Workspace  @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  competitorId String?    @map("competitor_id")
+  competitor   Competitor? @relation(fields: [competitorId], references: [id], onDelete: SetNull)
+
+  @@unique([workspaceId, platform, platformPostId])
+  @@index([workspaceId])
+  @@index([competitorId])
+  @@index([platform])
+  @@index([postedAt])
+  @@index([engagementRate])
+  @@index([createdAt])
+  @@map("scraped_posts")
+}
+
+// ============================================
+// CORE FEATURES: ANALYSIS & REPORTING
+// ============================================
+
+model AnalysisReport {
+  id          String       @id @default(cuid())
+  title       String
+  description String?
+  type        AnalysisType
+  status      ReportStatus @default(PENDING)
+  
+  // Date range for analysis
+  dateRangeStart DateTime  @map("date_range_start")
+  dateRangeEnd   DateTime  @map("date_range_end")
+  
+  // Report Configuration
+  config      Json?        // Filters, competitors included, etc.
+  
+  // Results
+  results     Json?        // The actual analysis results
+  insights    Json         // AI-generated insights array stored as JSON
+  recommendations Json     // Actionable recommendations array stored as JSON
+  
+  // Files
+  pdfUrl      String?      @map("pdf_url")
+  csvUrl      String?      @map("csv_url")
+  
+  // Processing
+  startedAt   DateTime?    @map("started_at")
+  completedAt DateTime?    @map("completed_at")
+  errorMessage String?     @map("error_message")
+  
+  createdAt   DateTime     @default(now()) @map("created_at")
+  updatedAt   DateTime     @updatedAt @map("updated_at")
+
+  // Relations
+  workspaceId String    @map("workspace_id")
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  createdById String    @map("created_by_id")
+  createdBy   User      @relation(fields: [createdById], references: [id], onDelete: Cascade)
+
+  @@index([workspaceId])
+  @@index([createdById])
+  @@index([type])
+  @@index([status])
+  @@index([createdAt])
+  @@index([dateRangeStart, dateRangeEnd])
+  @@map("analysis_reports")
+}
+
+// ============================================
+// USAGE & AUDIT LOGGING
+// ============================================
+
+model UsageLog {
+  id          String   @id @default(cuid())
+  action      String   // e.g., "scrape_posts", "generate_report", "add_competitor"
+  resourceType String  @map("resource_type") // e.g., "competitor", "hashtag", "report"
+  resourceId  String?  @map("resource_id")
+  count       Int      @default(1) // Number of units consumed
+  metadata    Json?    // Additional context
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  // Relations
+  workspaceId String    @map("workspace_id")
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  userId      String?   @map("user_id")
+  user        User?     @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([workspaceId])
+  @@index([userId])
+  @@index([action])
+  @@index([createdAt])
+  @@index([workspaceId, createdAt])
+  @@map("usage_logs")
+}
+
+model AuditLog {
+  id          String   @id @default(cuid())
+  action      String   // e.g., "workspace.updated", "member.invited", "competitor.deleted"
+  entityType  String   @map("entity_type")
+  entityId    String   @map("entity_id")
+  oldValues   Json?    @map("old_values")
+  newValues   Json?    @map("new_values")
+  ipAddress   String?  @map("ip_address")
+  userAgent   String?  @map("user_agent")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  // Relations
+  workspaceId String    @map("workspace_id")
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  performedBy String?   @map("performed_by") // User ID who performed the action
+
+  @@index([workspaceId])
+  @@index([entityType, entityId])
+  @@index([action])
+  @@index([createdAt])
+  @@index([workspaceId, createdAt])
+  @@map("audit_logs")
+}
