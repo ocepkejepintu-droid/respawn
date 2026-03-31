@@ -8,7 +8,7 @@
  * - publicProcedure: Procedure that doesn't require authentication
  */
 
-import { initTRPC } from '@trpc/server';
+import { initTRPC, TRPCError } from '@trpc/server';
 import { z } from 'zod';
 
 // ============================================================================
@@ -50,7 +50,7 @@ export const mergeRouters = t.mergeRouters;
 // Middleware
 const isAuthed = t.middleware(({ ctx, next }) => {
   if (!ctx.user) {
-    throw new Error('UNAUTHORIZED');
+    throw new TRPCError({ code: 'UNAUTHORIZED' });
   }
   return next({
     ctx: {
@@ -63,25 +63,3 @@ const isAuthed = t.middleware(({ ctx, next }) => {
 // Procedures
 export const publicProcedure = t.procedure;
 export const protectedProcedure = t.procedure.use(isAuthed);
-
-// ============================================================================
-// Main Router Export
-// ============================================================================
-
-import { apifyRouter } from './routers/apify';
-import { briefingRouter } from './routers/briefing';
-import { competitorsRouter } from './routers/competitors';
-import { optimizeRouter } from './routers/optimize';
-import { audienceRouter } from './routers/audience';
-import { billingRouter } from './routers/billing';
-
-export const appRouter = createTRPCRouter({
-  apify: apifyRouter,
-  briefing: briefingRouter,
-  competitors: competitorsRouter,
-  optimize: optimizeRouter,
-  audience: audienceRouter,
-  billing: billingRouter,
-});
-
-export type AppRouter = typeof appRouter;

@@ -159,6 +159,9 @@ model Workspace {
   members    WorkspaceMember[]
   subscription Subscription?
   competitors Competitor[]
+  ownedSocialAccounts OwnedSocialAccount[]
+  ownedContentSnapshots OwnedContentSnapshot[]
+  ownedContentComments OwnedContentComment[]
   hashtagTracks HashtagTrack[]
   scrapedPosts ScrapedPost[]
   analysisReports AnalysisReport[]
@@ -169,6 +172,112 @@ model Workspace {
   @@index([slug])
   @@index([isActive])
   @@map("workspaces")
+}
+
+model OwnedSocialAccount {
+  id            String   @id @default(cuid())
+  platform      Platform
+  handle        String
+  profileUrl    String   @map("profile_url")
+  displayName   String?  @map("display_name")
+  bio           String?
+  avatarUrl     String?  @map("avatar_url")
+  followerCount Int      @default(0) @map("follower_count")
+  followingCount Int     @default(0) @map("following_count")
+  postCount     Int      @default(0) @map("post_count")
+  isVerified    Boolean  @default(false) @map("is_verified")
+  lastSyncedAt  DateTime? @map("last_synced_at")
+  metadata      Json?
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  workspaceId String    @map("workspace_id")
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  contentSnapshots OwnedContentSnapshot[]
+  comments         OwnedContentComment[]
+
+  @@unique([workspaceId, platform, handle])
+  @@index([workspaceId])
+  @@index([platform])
+  @@index([lastSyncedAt])
+  @@map("owned_social_accounts")
+}
+
+model OwnedContentSnapshot {
+  id                   String   @id @default(cuid())
+  platformPostId       String   @map("platform_post_id")
+  platform             Platform
+  postUrl              String   @map("post_url")
+  title                String
+  caption              String?
+  hook                 String?
+  topic                String?
+  visualFormat         String?  @map("visual_format")
+  editStyle            String?  @map("edit_style")
+  captionType          String?  @map("caption_type")
+  ctaType              String?  @map("cta_type")
+  publishedAt          DateTime @map("published_at")
+  likesCount           Int      @default(0) @map("likes_count")
+  commentsCount        Int      @default(0) @map("comments_count")
+  sharesCount          Int      @default(0) @map("shares_count")
+  viewsCount           Int      @default(0) @map("views_count")
+  engagementRate       Float?   @map("engagement_rate")
+  engagementEfficiency Float?   @map("engagement_efficiency")
+  repeatabilityScore   Float?   @map("repeatability_score")
+  conversionIntentScore Float?  @map("conversion_intent_score")
+  retentionProxyScore  Float?   @map("retention_proxy_score")
+  checkpointMetrics    Json?    @map("checkpoint_metrics")
+  hashtags             Json
+  mentions             Json
+  keywords             Json
+  metadata             Json?
+  createdAt            DateTime @default(now()) @map("created_at")
+  updatedAt            DateTime @updatedAt @map("updated_at")
+
+  workspaceId      String            @map("workspace_id")
+  workspace        Workspace         @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  ownedAccountId   String            @map("owned_account_id")
+  ownedAccount     OwnedSocialAccount @relation(fields: [ownedAccountId], references: [id], onDelete: Cascade)
+  comments         OwnedContentComment[]
+
+  @@unique([workspaceId, platform, platformPostId])
+  @@index([workspaceId])
+  @@index([ownedAccountId])
+  @@index([platform])
+  @@index([publishedAt])
+  @@index([engagementRate])
+  @@map("owned_content_snapshots")
+}
+
+model OwnedContentComment {
+  id                String   @id @default(cuid())
+  platformCommentId String?  @map("platform_comment_id")
+  platform          Platform
+  text              String
+  authorHandle      String?  @map("author_handle")
+  postedAt          DateTime @map("posted_at")
+  likesCount        Int      @default(0) @map("likes_count")
+  sentiment         String
+  category          String
+  intentLabel       String   @map("intent_label")
+  language          String
+  metadata          Json?
+  createdAt         DateTime @default(now()) @map("created_at")
+  updatedAt         DateTime @updatedAt @map("updated_at")
+
+  workspaceId        String             @map("workspace_id")
+  workspace          Workspace          @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  ownedAccountId     String             @map("owned_account_id")
+  ownedAccount       OwnedSocialAccount @relation(fields: [ownedAccountId], references: [id], onDelete: Cascade)
+  contentSnapshotId  String             @map("content_snapshot_id")
+  contentSnapshot    OwnedContentSnapshot @relation(fields: [contentSnapshotId], references: [id], onDelete: Cascade)
+
+  @@index([workspaceId])
+  @@index([ownedAccountId])
+  @@index([contentSnapshotId])
+  @@index([platform])
+  @@index([postedAt])
+  @@map("owned_content_comments")
 }
 
 model WorkspaceMember {

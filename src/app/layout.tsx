@@ -3,7 +3,6 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { SessionProvider } from "@/components/providers";
 import { ThemeInitializer } from "@/components/providers/theme-initializer";
-import { TRPCProvider } from "@/trpc/provider";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -91,11 +90,9 @@ export default function RootLayout({
     >
       <body className="min-h-full flex flex-col">
         <ThemeInitializer />
-        <TRPCProvider>
-          <SessionProvider>
-            {children}
-          </SessionProvider>
-        </TRPCProvider>
+        <SessionProvider>
+          {children}
+        </SessionProvider>
       </body>
     </html>
   );

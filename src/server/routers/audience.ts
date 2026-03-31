@@ -28,8 +28,8 @@ import {
   generateExportData,
 } from '@/server/services/audience/insights';
 import {
-  createHeroAnalyticsReport,
-  getHeroAnalyticsReports,
+  getHeroDashboard,
+  refreshHeroAnalytics,
 } from '@/server/services/audience/hero-analytics';
 import type {
   SentimentAnalysis,
@@ -41,6 +41,8 @@ import type {
   AudienceOverview,
   KeywordData,
   TopicCluster,
+  CommentInsight,
+  KeywordData,
 } from '@/types/audience';
 
 // ============================================================================
@@ -129,23 +131,58 @@ function generateMockComments(count: number = 50): Array<{
   return comments;
 }
 
+function normalizeLegacySentiment(sentiment: string): 'positive' | 'negative' | 'neutral' {
+  return sentiment === 'mixed' ? 'neutral' : sentiment as 'positive' | 'negative' | 'neutral';
+}
+
+function normalizeLegacyCommentInsights(insights: CommentInsight[]): CommentInsight[] {
+  return insights.map((insight) => ({
+    ...insight,
+    sentiment: normalizeLegacySentiment(insight.sentiment),
+  }));
+}
+
+function normalizeLegacyKeywords(keywords: KeywordData[]): KeywordData[] {
+  return keywords.map((keyword) => ({
+    ...keyword,
+    sentiment: normalizeLegacySentiment(keyword.sentiment),
+  }));
+}
+
+function normalizeLegacySentimentAnalysis(analysis: SentimentAnalysis): SentimentAnalysis {
+  const normalizeScoreMap = (map: Record<string, { positive: number; negative: number; neutral: number; mixed?: number; compound: number }>) =>
+    Object.fromEntries(
+      Object.entries(map).map(([key, value]) => [
+        key,
+        {
+          ...value,
+          neutral: value.neutral + (value.mixed || 0),
+          mixed: 0,
+        },
+      ])
+    );
+
+  return {
+    ...analysis,
+    byContentType: normalizeScoreMap(analysis.byContentType),
+    byPlatform: normalizeScoreMap(analysis.byPlatform),
+    overall: {
+      ...analysis.overall,
+      neutral: analysis.overall.neutral + (analysis.overall.mixed || 0),
+      mixed: 0,
+    },
+  };
+}
+
 // ============================================================================
 // Audience Router
 // ============================================================================
 
 export const audienceRouter = createTRPCRouter({
-  getHeroAnalytics: protectedProcedure
-    .input(z.object({
-      workspaceId: z.string(),
-      limit: z.number().min(1).max(12).default(6),
-    }))
+  getHeroDashboard: protectedProcedure
+    .input(z.object({ workspaceId: z.string() }))
     .query(async ({ input }) => {
-      const history = await getHeroAnalyticsReports(input.workspaceId, input.limit);
-
-      return {
-        latest: history[0] ?? null,
-        history,
-      };
+      return getHeroDashboard(input.workspaceId);
     }),
 
   refreshHeroAnalytics: protectedProcedure
@@ -160,14 +197,12 @@ export const audienceRouter = createTRPCRouter({
       )
     )
     .mutation(async ({ input, ctx }) => {
-      const report = await createHeroAnalyticsReport({
+      return refreshHeroAnalytics({
         workspaceId: input.workspaceId,
         userId: ctx.user.id,
         instagramHandle: input.instagramHandle,
         tiktokHandle: input.tiktokHandle,
       });
-
-      return { report };
     }),
 
   // ==========================================================================
@@ -185,28 +220,30 @@ export const audienceRouter = createTRPCRouter({
       
       // Analyze sentiment
       const { insights: commentInsights, analysis: sentimentAnalysis } = await analyzeComments(mockComments);
+      const normalizedCommentInsights = normalizeLegacyCommentInsights(commentInsights);
+      const normalizedSentimentAnalysis = normalizeLegacySentimentAnalysis(sentimentAnalysis);
       
       // Get demographics
       const demographics = aggregateDemographics(input.workspaceId, 12500);
       
       // Extract keywords
-      const keywords = extractAllKeywords(commentInsights, 50);
+      const keywords = normalizeLegacyKeywords(extractAllKeywords(normalizedCommentInsights, 50));
       
       // Cluster topics
-      const trendingTopics = clusterTopics(keywords, commentInsights);
+      const trendingTopics = clusterTopics(keywords, normalizedCommentInsights);
       
       // Generate segments
       const segments = generateAudienceSegments(12500);
       
       // Generate VoC
-      const voc = generateVoiceOfCustomer(commentInsights, keywords);
+      const voc = generateVoiceOfCustomer(normalizedCommentInsights, keywords);
       
       // Generate insights
       const aiInsights = generateInsights(
-        sentimentAnalysis,
+        normalizedSentimentAnalysis,
         demographics,
         {
-          topComments: commentInsights.slice(0, 20),
+          topComments: normalizedCommentInsights.slice(0, 20),
           questions: [],
           painPoints: [],
           responseRate: { responded: 45, total: 100, percentage: 45 },
@@ -225,7 +262,7 @@ export const audienceRouter = createTRPCRouter({
         },
         totalComments: mockComments.length,
         totalEngagement: mockComments.reduce((sum, c) => sum + Math.floor(Math.random() * 100), 0),
-        sentimentAnalysis,
+        normalizedSentimentAnalysis,
         demographics,
         topKeywords: keywords.slice(0, 20),
         trendingTopics,
@@ -443,8 +480,9 @@ export const audienceRouter = createTRPCRouter({
     .query(async ({ input }) => {
       const mockComments = generateMockComments(100);
       const { insights } = await analyzeComments(mockComments);
+      const normalizedInsights = normalizeLegacyCommentInsights(insights);
       
-      let filtered = insights;
+      let filtered = normalizedInsights;
       
       if (input.filters?.sentiment?.length) {
         filtered = filtered.filter((c) => input.filters!.sentiment!.includes(c.sentiment));
@@ -530,8 +568,9 @@ export const audienceRouter = createTRPCRouter({
     .query(async ({ input }) => {
       const mockComments = generateMockComments(100);
       const { insights } = await analyzeComments(mockComments);
-      const keywords = extractAllKeywords(insights, 50);
-      return generateVoiceOfCustomer(insights, keywords);
+      const normalizedInsights = normalizeLegacyCommentInsights(insights);
+      const keywords = normalizeLegacyKeywords(extractAllKeywords(normalizedInsights, 50));
+      return generateVoiceOfCustomer(normalizedInsights, keywords);
     }),
 
   getFeatureRequests: protectedProcedure
@@ -616,16 +655,18 @@ export const audienceRouter = createTRPCRouter({
     .query(async ({ input }) => {
       const mockComments = generateMockComments(100);
       const { insights: commentInsights, analysis: sentimentAnalysis } = await analyzeComments(mockComments);
+      const normalizedCommentInsights = normalizeLegacyCommentInsights(commentInsights);
+      const normalizedSentimentAnalysis = normalizeLegacySentimentAnalysis(sentimentAnalysis);
       const demographics = aggregateDemographics(input.workspaceId, 12500);
-      const keywords = extractAllKeywords(commentInsights, 50);
-      const voc = generateVoiceOfCustomer(commentInsights, keywords);
+      const keywords = normalizeLegacyKeywords(extractAllKeywords(normalizedCommentInsights, 50));
+      const voc = generateVoiceOfCustomer(normalizedCommentInsights, keywords);
       const segments = generateAudienceSegments(12500);
       
       let insights = generateInsights(
-        sentimentAnalysis,
+        normalizedSentimentAnalysis,
         demographics,
         {
-          topComments: commentInsights.slice(0, 20),
+          topComments: normalizedCommentInsights.slice(0, 20),
           questions: [],
           painPoints: [],
           responseRate: { responded: 45, total: 100, percentage: 45 },
@@ -660,15 +701,17 @@ export const audienceRouter = createTRPCRouter({
     .mutation(async ({ input }) => {
       const mockComments = generateMockComments(100);
       const { insights: commentInsights, analysis: sentimentAnalysis } = await analyzeComments(mockComments);
+      const normalizedCommentInsights = normalizeLegacyCommentInsights(commentInsights);
+      const normalizedSentimentAnalysis = normalizeLegacySentimentAnalysis(sentimentAnalysis);
       const demographics = aggregateDemographics(input.workspaceId, 12500);
-      const keywords = extractAllKeywords(commentInsights, 50);
-      const voc = generateVoiceOfCustomer(commentInsights, keywords);
+      const keywords = normalizeLegacyKeywords(extractAllKeywords(normalizedCommentInsights, 50));
+      const voc = generateVoiceOfCustomer(normalizedCommentInsights, keywords);
       
       const exportData = generateExportData(
-        sentimentAnalysis,
+        normalizedSentimentAnalysis,
         demographics,
         {
-          topComments: commentInsights.slice(0, 20),
+          topComments: normalizedCommentInsights.slice(0, 20),
           questions: [],
           painPoints: [],
           responseRate: { responded: 45, total: 100, percentage: 45 },

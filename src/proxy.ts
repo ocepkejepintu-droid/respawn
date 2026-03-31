@@ -11,7 +11,6 @@ export const config = {
     "/optimize/:path*",
     "/billing/:path*",
     "/settings/:path*",
-    "/api/trpc/:path*",
   ],
 };
 
