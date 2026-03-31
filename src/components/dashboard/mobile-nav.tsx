@@ -149,7 +149,7 @@ const MobileNav = React.forwardRef<HTMLDivElement, MobileNavProps>(
                 </svg>
               </div>
               <span className="text-lg font-bold text-neutral-900 dark:text-white">
-                Real Buzzer
+                RESPAWN Analytics
               </span>
             </Link>
             <button

@@ -15,8 +15,8 @@ import {
 import { Button } from "@/components/ui/button";
 
 export const metadata: Metadata = {
-  title: "Features - Real Buzzer",
-  description: "Explore all the powerful features Real Buzzer offers to help you grow on social media with data-driven insights.",
+  title: "Features - RESPAWN Analytics",
+  description: "Explore all the powerful features RESPAWN Analytics offers to help you grow on social media with data-driven insights.",
 };
 
 const features = [

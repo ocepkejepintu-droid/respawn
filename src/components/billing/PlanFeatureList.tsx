@@ -86,7 +86,7 @@ const ALL_FEATURES = [
   {
     key: 'whitelabel',
     label: 'White-label Reports',
-    description: 'Remove Real Buzzer branding from reports',
+    description: 'Remove RESPAWN Analytics branding from reports',
     tiers: { FREE: false, PRO: false, AGENCY: true },
   },
   {

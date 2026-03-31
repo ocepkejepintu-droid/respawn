@@ -148,7 +148,7 @@ export default function BriefingPage() {
               disabled={!workspaceId || isRefreshing}
             >
               <RefreshCw className={cn("mr-2 h-4 w-4", isRefreshing && "animate-spin")} />
-              Refresh from Apify
+              Update from Server
             </Button>
           </div>
         }
@@ -173,7 +173,7 @@ export default function BriefingPage() {
               <Sunrise className="mx-auto mb-4 h-12 w-12 text-neutral-400" />
               <h3 className="mb-2 text-lg font-medium">No workspace selected</h3>
               <p className="mb-4 text-neutral-500">
-                Pick a workspace to load the latest briefing and run Apify refreshes.
+                Pick a workspace to load the latest briefing and run server updates.
               </p>
             </CardContent>
           </Card>
@@ -391,7 +391,7 @@ export default function BriefingPage() {
                 ))
               ) : (
                   <p className="text-sm text-neutral-500 dark:text-neutral-400">
-                    No saved briefings yet. Click "Refresh from Apify" to generate the first one.
+                    No saved briefings yet. Click "Update from Server" to generate the first one.
                   </p>
               )}
             </CardContent>
@@ -404,11 +404,11 @@ export default function BriefingPage() {
               <Sunrise className="mx-auto mb-4 h-12 w-12 text-neutral-400" />
               <h3 className="mb-2 text-lg font-medium">No briefing available</h3>
               <p className="mb-4 text-neutral-500">
-                Your workspace does not have a saved briefing yet. Use "Refresh from Apify" to generate one.
+                Your workspace does not have a saved briefing yet. Use "Update from Server" to generate one.
               </p>
               <Button onClick={handleRefresh} disabled={!workspaceId || isRefreshing}>
                 <RefreshCw className={cn("mr-2 h-4 w-4", isRefreshing && "animate-spin")} />
-                Refresh from Apify
+                Update from Server
               </Button>
             </CardContent>
           </Card>

@@ -3,28 +3,28 @@ import { Navbar } from "@/components/marketing/Navbar";
 import { Footer } from "@/components/marketing/Footer";
 
 export const metadata: Metadata = {
-  title: "Real Buzzer - Data-Driven Growth for Creators & Agencies",
+  title: "RESPAWN Analytics - Data-Driven Growth for Creators & Agencies",
   description: "Replace fake engagement with real intelligence. Get daily insights on competitors, trends, and what actually works in your niche.",
   keywords: ["social media analytics", "competitor analysis", "content optimization", "Instagram analytics", "TikTok analytics"],
-  authors: [{ name: "Real Buzzer" }],
+  authors: [{ name: "RESPAWN Analytics" }],
   openGraph: {
-    title: "Real Buzzer - Data-Driven Growth for Creators & Agencies",
+    title: "RESPAWN Analytics - Data-Driven Growth for Creators & Agencies",
     description: "Replace fake engagement with real intelligence. Get daily insights on competitors, trends, and what actually works in your niche.",
     type: "website",
     url: "https://realbuzzer.com",
-    siteName: "Real Buzzer",
+    siteName: "RESPAWN Analytics",
     images: [
       {
         url: "/og-image.jpg",
         width: 1200,
         height: 630,
-        alt: "Real Buzzer - Social Media Intelligence Platform",
+        alt: "RESPAWN Analytics - Social Media Intelligence Platform",
       },
     ],
   },
   twitter: {
     card: "summary_large_image",
-    title: "Real Buzzer - Data-Driven Growth for Creators & Agencies",
+    title: "RESPAWN Analytics - Data-Driven Growth for Creators & Agencies",
     description: "Replace fake engagement with real intelligence. Get daily insights on competitors, trends, and what actually works in your niche.",
     images: ["/og-image.jpg"],
   },

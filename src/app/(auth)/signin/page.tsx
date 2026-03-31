@@ -14,7 +14,7 @@ function SignInContent() {
       <div className="w-full max-w-md space-y-8">
         <div className="text-center">
           <h2 className="mt-6 text-3xl font-bold tracking-tight text-gray-900">
-            Sign in to Real Buzzer
+            Sign in to RESPAWN Analytics
           </h2>
           <p className="mt-2 text-sm text-gray-600">
             Welcome back! Please sign in to continue.

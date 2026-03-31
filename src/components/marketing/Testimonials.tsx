@@ -12,7 +12,7 @@ const testimonials = [
     company: "@sarahcreates",
     avatar: "SC",
     content:
-      "Real Buzzer completely transformed how I approach content. The competitor insights helped me identify gaps in my strategy that I never knew existed. My engagement rate increased by 340% in just 3 months!",
+    "RESPAWN Analytics completely transformed how I approach content. The competitor insights helped me identify gaps in my strategy that I never knew existed. My engagement rate increased by 340% in just 3 months!",
     rating: 5,
     metric: "340%",
     metricLabel: "engagement increase",
@@ -24,7 +24,7 @@ const testimonials = [
     company: "Bloom Agency",
     avatar: "MJ",
     content:
-      "Managing 15+ client accounts used to be overwhelming. Real Buzzer's automated briefings save me hours every day. I can now focus on strategy instead of manually tracking competitors.",
+    "Managing 15+ client accounts used to be overwhelming. RESPAWN Analytics' automated briefings save me hours every day. I can now focus on strategy instead of manually tracking competitors.",
     rating: 5,
     metric: "10hrs",
     metricLabel: "saved weekly",
@@ -48,7 +48,7 @@ const testimonials = [
     company: "GrowthLabs",
     avatar: "DK",
     content:
-      "We tried 5 different analytics tools before finding Real Buzzer. The depth of insights combined with the intuitive interface is unmatched. Our agency's client retention improved significantly.",
+    "We tried 5 different analytics tools before finding RESPAWN Analytics. The depth of insights combined with the intuitive interface is unmatched. Our agency's client retention improved significantly.",
     rating: 5,
     metric: "95%",
     metricLabel: "client retention",
@@ -72,7 +72,7 @@ const testimonials = [
     company: "Creator Fund",
     avatar: "JW",
     content:
-      "I recommend Real Buzzer to all the creators in our portfolio. The competitive intelligence helps them understand their market position and make data-driven decisions about content.",
+    "I recommend RESPAWN Analytics to all the creators in our portfolio. The competitive intelligence helps them understand their market position and make data-driven decisions about content.",
     rating: 5,
     metric: "500+",
     metricLabel: "creators supported",
@@ -132,7 +132,7 @@ export function Testimonials() {
           </h2>
           <p className="text-lg text-neutral-600">
             Join thousands of creators and agencies who have transformed their 
-            social media strategy with Real Buzzer.
+              social media strategy with RESPAWN Analytics.
           </p>
         </motion.div>
 

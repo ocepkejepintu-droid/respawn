@@ -27,6 +27,10 @@ import {
   generateVoiceOfCustomer,
   generateExportData,
 } from '@/server/services/audience/insights';
+import {
+  createHeroAnalyticsReport,
+  getHeroAnalyticsReports,
+} from '@/server/services/audience/hero-analytics';
 import type {
   SentimentAnalysis,
   Demographics,
@@ -130,6 +134,42 @@ function generateMockComments(count: number = 50): Array<{
 // ============================================================================
 
 export const audienceRouter = createTRPCRouter({
+  getHeroAnalytics: protectedProcedure
+    .input(z.object({
+      workspaceId: z.string(),
+      limit: z.number().min(1).max(12).default(6),
+    }))
+    .query(async ({ input }) => {
+      const history = await getHeroAnalyticsReports(input.workspaceId, input.limit);
+
+      return {
+        latest: history[0] ?? null,
+        history,
+      };
+    }),
+
+  refreshHeroAnalytics: protectedProcedure
+    .input(
+      z.object({
+        workspaceId: z.string(),
+        instagramHandle: z.string().trim().optional(),
+        tiktokHandle: z.string().trim().optional(),
+      }).refine(
+        (value) => Boolean(value.instagramHandle || value.tiktokHandle),
+        'Provide at least one Instagram or TikTok handle.'
+      )
+    )
+    .mutation(async ({ input, ctx }) => {
+      const report = await createHeroAnalyticsReport({
+        workspaceId: input.workspaceId,
+        userId: ctx.user.id,
+        instagramHandle: input.instagramHandle,
+        tiktokHandle: input.tiktokHandle,
+      });
+
+      return { report };
+    }),
+
   // ==========================================================================
   // Overview & Dashboard
   // ==========================================================================

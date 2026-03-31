@@ -13,7 +13,7 @@ export default function HomePage() {
   const websiteSchema = {
     "@context": "https://schema.org",
     "@type": "WebSite",
-    name: "Real Buzzer",
+    name: "RESPAWN Analytics",
     url: "https://realbuzzer.com",
     description: "Data-driven growth for creators and agencies",
     potentialAction: {
@@ -26,7 +26,7 @@ export default function HomePage() {
   const organizationSchema = {
     "@context": "https://schema.org",
     "@type": "Organization",
-    name: "Real Buzzer",
+    name: "RESPAWN Analytics",
     url: "https://realbuzzer.com",
     logo: "https://realbuzzer.com/logo.png",
     sameAs: [
@@ -44,7 +44,7 @@ export default function HomePage() {
   const softwareAppSchema = {
     "@context": "https://schema.org",
     "@type": "SoftwareApplication",
-    name: "Real Buzzer",
+    name: "RESPAWN Analytics",
     applicationCategory: "BusinessApplication",
     operatingSystem: "Web",
     offers: {

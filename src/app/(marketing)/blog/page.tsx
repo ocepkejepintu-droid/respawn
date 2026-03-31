@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { ArrowRight, BookOpen } from "lucide-react";
 
 export const metadata: Metadata = {
-  title: "Blog - Real Buzzer",
+  title: "Blog - RESPAWN Analytics",
   description: "Insights, strategies, and tips for growing your social media presence with data-driven approaches.",
 };
 
@@ -83,7 +83,7 @@ export default function BlogPage() {
           <div className="text-center max-w-3xl mx-auto">
             <span className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white text-primary-700 text-sm font-medium mb-6 shadow-sm">
               <BookOpen className="w-4 h-4" />
-              Real Buzzer Blog
+          RESPAWN Analytics Blog
             </span>
             <h1 className="text-4xl lg:text-5xl xl:text-6xl font-bold text-neutral-900 mb-6">
               Insights for{" "}

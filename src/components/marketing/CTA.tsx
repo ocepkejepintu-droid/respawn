@@ -74,7 +74,7 @@ export function CTA() {
               transition={{ duration: 0.5, delay: 0.3 }}
               className="text-lg lg:text-xl text-primary-100 mb-10 max-w-2xl mx-auto"
             >
-              Join 2,000+ creators and agencies using Real Buzzer to grow faster, 
+            Join 2,000+ creators and agencies using RESPAWN Analytics to grow faster,
               work smarter, and stay ahead of the competition.
             </motion.p>
 

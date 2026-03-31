@@ -174,7 +174,7 @@ export function Hero() {
                   <div className="w-3 h-3 rounded-full bg-green-400" />
                 </div>
                 <div className="flex-1 text-center text-xs text-neutral-400 font-medium">
-                  Real Buzzer Dashboard
+                    RESPAWN Analytics Dashboard
                 </div>
               </div>
               

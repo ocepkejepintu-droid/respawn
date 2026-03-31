@@ -72,7 +72,7 @@ export default function ContactPage() {
               We'd love to hear from you
             </h1>
             <p className="text-lg lg:text-xl text-neutral-600">
-              Have a question about Real Buzzer? Want to schedule a demo? 
+            Have a question about RESPAWN Analytics? Want to schedule a demo?
               Fill out the form below and we'll get back to you shortly.
             </p>
           </div>

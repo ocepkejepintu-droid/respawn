@@ -5,8 +5,8 @@ import { Button } from "@/components/ui/button";
 import { ArrowRight, Target, Heart, Zap, Globe, Users, Award } from "lucide-react";
 
 export const metadata: Metadata = {
-  title: "About - Real Buzzer",
-  description: "Learn about Real Buzzer's mission to help creators and agencies grow with data-driven social media intelligence.",
+  title: "About - RESPAWN Analytics",
+  description: "Learn about RESPAWN Analytics' mission to help creators and agencies grow with data-driven social media intelligence.",
 };
 
 const teamMembers = [
@@ -20,7 +20,7 @@ const teamMembers = [
   {
     name: "Jamie Chen",
     role: "CTO & Co-Founder",
-    bio: "Ex-Google engineer. Built the first version of Real Buzzer in a weekend hackathon.",
+    bio: "Ex-Google engineer. Built the first version of RESPAWN Analytics in a weekend hackathon.",
     initials: "JC",
     color: "purple",
   },
@@ -81,7 +81,7 @@ export default function AboutPage() {
               </span>
             </h1>
             <p className="text-lg lg:text-xl text-neutral-600">
-              Real Buzzer was born from a simple observation: the tools that big brands 
+              RESPAWN Analytics was born from a simple observation: the tools that big brands
               use to dominate social media were completely inaccessible to individual creators.
             </p>
           </div>
@@ -106,7 +106,7 @@ export default function AboutPage() {
             </p>
 
             <p className="text-neutral-600 leading-relaxed mt-6">
-              Real Buzzer was built to change that. We set out to create the same caliber of intelligence 
+              RESPAWN Analytics was built to change that. We set out to create the same caliber of intelligence
               tools that Fortune 500 companies use, but make them accessible and affordable for creators 
               and small agencies.
             </p>
@@ -122,7 +122,7 @@ export default function AboutPage() {
             </blockquote>
 
             <p className="text-neutral-600 leading-relaxed">
-              Today, Real Buzzer helps over 2,000 creators and agencies across 120+ countries make 
+              Today, RESPAWN Analytics helps over 2,000 creators and agencies across 120+ countries make
               smarter decisions about their social media strategy. We've analyzed over 50 million posts 
               and helped our users achieve an average 340% increase in engagement.
             </p>

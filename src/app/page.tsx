@@ -12,7 +12,7 @@ import { FAQ } from "@/components/marketing/FAQ";
 import { CTA } from "@/components/marketing/CTA";
 
 export const metadata: Metadata = {
-  title: "Real Buzzer - Data-Driven Growth for Creators & Agencies",
+  title: "RESPAWN Analytics - Data-Driven Growth for Creators & Agencies",
   description: "Replace fake engagement with real intelligence. Get daily insights on competitors, trends, and what actually works in your niche.",
 };
 

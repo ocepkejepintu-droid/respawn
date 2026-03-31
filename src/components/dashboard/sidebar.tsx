@@ -232,7 +232,7 @@ const Sidebar = React.forwardRef<HTMLDivElement, SidebarProps>(
               </div>
               {!collapsed && (
                 <span className="whitespace-nowrap text-lg font-bold text-neutral-900 dark:text-white">
-                  Real Buzzer
+                  RESPAWN Analytics
                 </span>
               )}
             </Link>

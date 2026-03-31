@@ -14,7 +14,7 @@ import { PlanFeatureList } from '@/components/billing';
 import { PRICING_TIERS } from '@/lib/stripe';
 
 export const metadata: Metadata = {
-  title: 'Pricing - Real Buzzer',
+  title: 'Pricing - RESPAWN Analytics',
   description: 'Simple, transparent pricing for competitor analysis. Start free, upgrade when you need more.',
 };
 
@@ -134,7 +134,7 @@ export default function PricingPage() {
             Ready to start tracking your competitors?
           </h2>
           <p className="text-primary-100 text-lg mb-8">
-            Join thousands of marketers using Real Buzzer to stay ahead of the competition.
+            Join thousands of marketers using RESPAWN Analytics to stay ahead of the competition.
           </p>
           <Link href="/signup">
             <Button size="lg" variant="secondary" className="px-8">

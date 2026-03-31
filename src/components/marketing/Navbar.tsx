@@ -43,7 +43,7 @@ export function Navbar() {
               <Zap className="w-5 h-5 lg:w-6 lg:h-6 text-white" />
             </div>
             <span className="text-xl lg:text-2xl font-bold bg-gradient-to-r from-neutral-900 to-neutral-700 bg-clip-text text-transparent">
-              Real Buzzer
+              RESPAWN Analytics
             </span>
           </Link>
 

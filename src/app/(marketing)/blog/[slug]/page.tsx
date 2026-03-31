@@ -96,7 +96,7 @@ const blogPosts: Record<string, {
       <div className="bg-primary-50 rounded-xl p-6 my-8">
         <p className="text-neutral-700 font-medium mb-2">Pro Tip</p>
         <p className="text-neutral-600 text-sm">
-          Use Real Buzzer's competitor tracking to automate this analysis. Get daily briefings on competitor 
+      Use RESPAWN Analytics' competitor tracking to automate this analysis. Get daily briefings on competitor
           activity, engagement trends, and content opportunities delivered straight to your inbox.
         </p>
       </div>
@@ -143,12 +143,12 @@ export async function generateMetadata({ params }: BlogPostPageProps): Promise<M
   
   if (!post) {
     return {
-      title: "Post Not Found - Real Buzzer Blog",
+    title: "Post Not Found - RESPAWN Analytics Blog",
     };
   }
 
   return {
-    title: `${post.title} - Real Buzzer Blog`,
+    title: `${post.title} - RESPAWN Analytics Blog`,
     description: post.excerpt,
   };
 }

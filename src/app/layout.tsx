@@ -17,37 +17,37 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: {
-    default: "Real Buzzer - Data-Driven Growth for Creators & Agencies",
-    template: "%s - Real Buzzer",
+    default: "RESPAWN Analytics - Data-Driven Growth for Creators & Agencies",
+    template: "%s - RESPAWN Analytics",
   },
   description: "Replace fake engagement with real intelligence. Get daily insights on competitors, trends, and what actually works in your niche.",
   keywords: ["social media analytics", "competitor analysis", "content optimization", "Instagram analytics", "TikTok analytics", "social media intelligence"],
-  authors: [{ name: "Real Buzzer" }],
-  creator: "Real Buzzer",
-  publisher: "Real Buzzer",
+  authors: [{ name: "RESPAWN Analytics" }],
+  creator: "RESPAWN Analytics",
+  publisher: "RESPAWN Analytics",
   metadataBase: new URL("https://realbuzzer.com"),
   alternates: {
     canonical: "/",
   },
   openGraph: {
-    title: "Real Buzzer - Data-Driven Growth for Creators & Agencies",
+    title: "RESPAWN Analytics - Data-Driven Growth for Creators & Agencies",
     description: "Replace fake engagement with real intelligence. Get daily insights on competitors, trends, and what actually works in your niche.",
     type: "website",
     url: "https://realbuzzer.com",
-    siteName: "Real Buzzer",
+    siteName: "RESPAWN Analytics",
     locale: "en_US",
     images: [
       {
         url: "/og-image.jpg",
         width: 1200,
         height: 630,
-        alt: "Real Buzzer - Social Media Intelligence Platform",
+        alt: "RESPAWN Analytics - Social Media Intelligence Platform",
       },
     ],
   },
   twitter: {
     card: "summary_large_image",
-    title: "Real Buzzer - Data-Driven Growth for Creators & Agencies",
+    title: "RESPAWN Analytics - Data-Driven Growth for Creators & Agencies",
     description: "Replace fake engagement with real intelligence. Get daily insights on competitors, trends, and what actually works in your niche.",
     images: ["/og-image.jpg"],
     creator: "@realbuzzer",

@@ -6,9 +6,9 @@ import { ChevronDown, HelpCircle } from "lucide-react";
 
 const faqs = [
   {
-    question: "What social media platforms does Real Buzzer support?",
+    question: "What social media platforms does RESPAWN Analytics support?",
     answer:
-      "Real Buzzer currently supports Instagram, TikTok, Twitter/X, YouTube, and LinkedIn. We're constantly adding new platforms based on user demand. Our multi-platform dashboard gives you a unified view of all your social media performance.",
+      "RESPAWN Analytics currently supports Instagram, TikTok, Twitter/X, YouTube, and LinkedIn. We're constantly adding new platforms based on user demand. Our multi-platform dashboard gives you a unified view of all your social media performance.",
   },
   {
     question: "How does the competitor tracking work?",
@@ -16,7 +16,7 @@ const faqs = [
       "Simply add your competitors' public profiles to your dashboard. Our AI analyzes their content strategy, posting frequency, engagement rates, hashtag usage, and audience growth. You'll receive daily briefings with actionable insights and trend alerts.",
   },
   {
-    question: "Can I try Real Buzzer before committing to a paid plan?",
+    question: "Can I try RESPAWN Analytics before committing to a paid plan?",
     answer:
       "Absolutely! We offer a 14-day free trial with full access to all Professional plan features. No credit card required. You can upgrade, downgrade, or cancel at any time.",
   },
@@ -26,7 +26,7 @@ const faqs = [
       "Our AI models are trained on millions of social media posts and are constantly learning. Our insights have a 94% accuracy rate according to user feedback. We combine AI analysis with human-verified data patterns to ensure reliability.",
   },
   {
-    question: "Is my data secure with Real Buzzer?",
+    question: "Is my data secure with RESPAWN Analytics?",
     answer:
       "Security is our top priority. We use bank-level encryption (AES-256) for all data, are GDPR compliant, and never share your data with third parties. We're SOC 2 Type II certified and undergo regular security audits.",
   },
@@ -43,7 +43,7 @@ const faqs = [
   {
     question: "Do you offer refunds if I'm not satisfied?",
     answer:
-      "Yes, we offer a 30-day money-back guarantee for all paid plans. If Real Buzzer doesn't meet your expectations, contact our support team for a full refund, no questions asked.",
+      "Yes, we offer a 30-day money-back guarantee for all paid plans. If RESPAWN Analytics doesn't meet your expectations, contact our support team for a full refund, no questions asked.",
   },
 ];
 
@@ -72,7 +72,7 @@ export function FAQ() {
             </span>
           </h2>
           <p className="text-lg text-neutral-600">
-            Everything you need to know about Real Buzzer. Can't find the answer 
+          Everything you need to know about RESPAWN Analytics. Can't find the answer
             you're looking for? Feel free to contact our support team.
           </p>
         </motion.div>

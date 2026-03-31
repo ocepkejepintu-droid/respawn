@@ -1,7 +1,7 @@
 import { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Audience Intelligence - Real Buzzer",
+  title: "Audience Intelligence - RESPAWN Analytics",
   description: "Understand your audience sentiment, demographics, and engagement patterns",
 };
 

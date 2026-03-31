@@ -1,23 +1,15 @@
 "use client";
 
-import * as React from "react";
-import { useState } from "react";
+import { useEffect, useState, type ReactNode } from "react";
+import { useSession } from "next-auth/react";
 import { PageHeader, PageContent } from "@/components/dashboard/dashboard-shell";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
 import { StatCard, StatCardGrid } from "@/components/ui/stat-card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { trpc } from "@/trpc/client";
-import {
-  SentimentGauge,
-  SentimentTimeline,
-  KeywordCloud,
-  AgeDistributionChart,
-  GeographicChart,
-  AudienceOverviewCard,
-  PeakEngagementChart,
-  BestTimesSummary,
-} from "@/components/audience";
 import {
   Users,
   MessageSquare,
@@ -25,47 +17,69 @@ import {
   Heart,
   Download,
   Filter,
-  Calendar,
-  BarChart3,
-  Globe,
-  Clock,
-  Zap,
-  AlertCircle,
-  ChevronRight,
+  RefreshCw,
+  ShieldCheck,
+  Activity,
+  Clock3,
 } from "lucide-react";
 
 export default function AudiencePage() {
-  const [period, setPeriod] = useState<'7d' | '30d' | '90d'>('30d');
-  
-  // Fetch audience overview
-  const { data: overview, isLoading } = trpc.audience.getOverview.useQuery({
-    workspaceId: 'demo-workspace',
-    period,
+  const { data: session, status } = useSession();
+  const [period, setPeriod] = useState<"7d" | "30d" | "90d">("30d");
+  const [instagramHandle, setInstagramHandle] = useState("");
+  const [tiktokHandle, setTiktokHandle] = useState("");
+
+  const workspaceId = session?.user?.currentWorkspaceId;
+  const hasWorkspace = Boolean(workspaceId);
+
+  const { data: overview, isLoading } = trpc.audience.getOverview.useQuery(
+    { workspaceId: workspaceId ?? "", period },
+    { enabled: hasWorkspace }
+  );
+
+  const heroAnalyticsQuery = trpc.audience.getHeroAnalytics.useQuery(
+    { workspaceId: workspaceId ?? "", limit: 6 },
+    { enabled: hasWorkspace }
+  );
+
+  const heroRefreshMutation = trpc.audience.refreshHeroAnalytics.useMutation({
+    onSuccess: async ({ report }) => {
+      await heroAnalyticsQuery.refetch();
+
+      if (report?.handles.instagramHandle) {
+        setInstagramHandle(report.handles.instagramHandle);
+      }
+
+      if (report?.handles.tiktokHandle) {
+        setTiktokHandle(report.handles.tiktokHandle);
+      }
+    },
   });
-  
-  // Fetch sentiment trends
-  const { data: trends } = trpc.audience.getSentimentTrends.useQuery({
-    workspaceId: 'demo-workspace',
-    days: period === '7d' ? 7 : period === '30d' ? 30 : 90,
-  });
-  
-  // Fetch demographics
-  const { data: demographics } = trpc.audience.getDemographics.useQuery({
-    workspaceId: 'demo-workspace',
-  });
-  
-  // Fetch word cloud data
-  const { data: wordCloudData } = trpc.audience.getWordCloud.useQuery({
-    workspaceId: 'demo-workspace',
-    maxWords: 50,
-  });
-  
-  // Fetch peak engagement
-  const { data: peakEngagement } = trpc.audience.getPeakEngagement.useQuery({
-    workspaceId: 'demo-workspace',
-  });
-  
-  if (isLoading || !overview) {
+
+  useEffect(() => {
+    const latest = heroAnalyticsQuery.data?.latest;
+    if (!latest) return;
+
+    if (!instagramHandle && latest.handles.instagramHandle) {
+      setInstagramHandle(latest.handles.instagramHandle);
+    }
+
+    if (!tiktokHandle && latest.handles.tiktokHandle) {
+      setTiktokHandle(latest.handles.tiktokHandle);
+    }
+  }, [heroAnalyticsQuery.data?.latest, instagramHandle, tiktokHandle]);
+
+  const handleRefresh = async () => {
+    if (!workspaceId) return;
+
+    await heroRefreshMutation.mutateAsync({
+      workspaceId,
+      instagramHandle,
+      tiktokHandle,
+    });
+  };
+
+  if (status === "loading" || (hasWorkspace && isLoading)) {
     return (
       <PageContent>
         <div className="flex h-96 items-center justify-center">
@@ -74,30 +88,48 @@ export default function AudiencePage() {
       </PageContent>
     );
   }
-  
+
+  if (!hasWorkspace) {
+    return (
+      <PageContent>
+        <Card>
+          <CardHeader>
+            <CardTitle>No workspace selected</CardTitle>
+            <CardDescription>
+              Pick a workspace before loading audience intelligence and account analytics.
+            </CardDescription>
+          </CardHeader>
+        </Card>
+      </PageContent>
+    );
+  }
+
+  const latestHeroReport = heroAnalyticsQuery.data?.latest ?? null;
+  const heroHistory = heroAnalyticsQuery.data?.history ?? [];
+
   return (
     <PageContent>
       <PageHeader
         title="Audience Intelligence"
-        description="Understand your audience sentiment, demographics, and engagement patterns"
+        description="Review audience signals and run manual account analytics on your own Instagram and TikTok profiles."
         breadcrumbs={[
-          { label: 'Dashboard', href: '/dashboard' },
-          { label: 'Audience' },
+          { label: "Dashboard", href: "/dashboard" },
+          { label: "Audience" },
         ]}
         actions={
           <div className="flex items-center gap-2">
             <div className="flex items-center gap-1 rounded-lg border border-neutral-200 p-1 dark:border-neutral-800">
-              {(['7d', '30d', '90d'] as const).map((p) => (
+              {(["7d", "30d", "90d"] as const).map((value) => (
                 <button
-                  key={p}
-                  onClick={() => setPeriod(p)}
+                  key={value}
+                  onClick={() => setPeriod(value)}
                   className={`rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
-                    period === p
-                      ? 'bg-blue-600 text-white'
-                      : 'text-neutral-600 hover:bg-neutral-100 dark:text-neutral-400 dark:hover:bg-neutral-800'
+                    period === value
+                      ? "bg-blue-600 text-white"
+                      : "text-neutral-600 hover:bg-neutral-100 dark:text-neutral-400 dark:hover:bg-neutral-800"
                   }`}
                 >
-                  {p === '7d' ? '7 Days' : p === '30d' ? '30 Days' : '90 Days'}
+                  {value === "7d" ? "7 Days" : value === "30d" ? "30 Days" : "90 Days"}
                 </button>
               ))}
             </div>
@@ -111,465 +143,397 @@ export default function AudiencePage() {
           </div>
         }
       />
-      
-      {/* Stats Overview */}
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <ShieldCheck className="h-5 w-5 text-primary-500" />
+            Hero Account Analytics
+          </CardTitle>
+          <CardDescription>
+            Add your own Instagram and/or TikTok handle, then run a manual server update to analyze what content is actually working.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          <div className="grid gap-4 lg:grid-cols-[1fr_1fr_auto]">
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-neutral-700 dark:text-neutral-300">
+                Instagram handle
+              </label>
+              <Input
+                value={instagramHandle}
+                onChange={(event) => setInstagramHandle(event.target.value)}
+                placeholder="@yourbrand or instagram.com/yourbrand"
+              />
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-neutral-700 dark:text-neutral-300">
+                TikTok handle
+              </label>
+              <Input
+                value={tiktokHandle}
+                onChange={(event) => setTiktokHandle(event.target.value)}
+                placeholder="@yourbrand or tiktok.com/@yourbrand"
+              />
+            </div>
+            <div className="flex items-end">
+              <Button
+                onClick={handleRefresh}
+                disabled={
+                  heroRefreshMutation.isPending ||
+                  (!instagramHandle.trim() && !tiktokHandle.trim())
+                }
+                className="w-full lg:w-auto"
+              >
+                <RefreshCw
+                  className={`mr-2 h-4 w-4 ${heroRefreshMutation.isPending ? "animate-spin" : ""}`}
+                />
+                Update from Server
+              </Button>
+            </div>
+          </div>
+
+          {latestHeroReport ? (
+            <div className="space-y-6">
+              <div className="flex flex-wrap items-center gap-2 text-sm text-neutral-500 dark:text-neutral-400">
+                <Badge variant="secondary">Latest snapshot</Badge>
+                <span>{new Date(latestHeroReport.createdAt).toLocaleString()}</span>
+              </div>
+
+              <div className="grid gap-4 xl:grid-cols-2">
+                {latestHeroReport.accounts.map((account) => (
+                  <Card
+                    key={`${account.platform}-${account.handle}`}
+                    className="border-[color:var(--card-border)] bg-[var(--card-background)]/95"
+                  >
+                    <CardHeader className="space-y-4">
+                      <div className="flex items-center justify-between gap-3">
+                        <div>
+                          <CardTitle className="text-lg">
+                            {account.platform === "instagram" ? "Instagram" : "TikTok"} @{account.handle}
+                          </CardTitle>
+                          <CardDescription>{account.profile.displayName}</CardDescription>
+                        </div>
+                        <Badge
+                          variant={
+                            account.audienceQualitySignals.score >= 70 ? "success" : "warning"
+                          }
+                        >
+                          Quality score {account.audienceQualitySignals.score}
+                        </Badge>
+                      </div>
+
+                      <div className="grid gap-3 sm:grid-cols-3">
+                        <MetricPill
+                          label="Followers"
+                          value={formatCompactNumber(account.profile.followersCount)}
+                        />
+                        <MetricPill
+                          label="Engagement"
+                          value={`${account.performance.avgEngagementRate.toFixed(1)}%`}
+                        />
+                        <MetricPill
+                          label="Posting cadence"
+                          value={`${account.performance.postingFrequency.toFixed(1)}/wk`}
+                        />
+                      </div>
+                    </CardHeader>
+                    <CardContent className="space-y-5">
+                      <div>
+                        <p className="mb-2 text-sm font-medium text-neutral-800 dark:text-neutral-200">
+                          What is working
+                        </p>
+                        <div className="space-y-3">
+                          {account.standoutContent.length > 0 ? (
+                            account.standoutContent.map((item) => (
+                              <div
+                                key={item.id}
+                                className="rounded-xl border border-neutral-200/80 bg-black/5 p-4 dark:border-white/10 dark:bg-white/5"
+                              >
+                                <div className="flex items-start justify-between gap-3">
+                                  <div>
+                                    <p className="font-medium text-neutral-900 dark:text-white">
+                                      {item.title}
+                                    </p>
+                                    <p className="mt-1 text-sm text-neutral-500 dark:text-neutral-400">
+                                      {item.reason}
+                                    </p>
+                                  </div>
+                                  <Badge variant="outline">
+                                    {item.engagementRate.toFixed(1)}%
+                                  </Badge>
+                                </div>
+                                <div className="mt-3 flex flex-wrap gap-3 text-xs text-neutral-500 dark:text-neutral-400">
+                                  <span>{formatCompactNumber(item.likes)} likes</span>
+                                  <span>{formatCompactNumber(item.comments)} comments</span>
+                                  {item.views !== undefined && (
+                                    <span>{formatCompactNumber(item.views)} views</span>
+                                  )}
+                                  {item.shares !== undefined && (
+                                    <span>{formatCompactNumber(item.shares)} shares</span>
+                                  )}
+                                </div>
+                              </div>
+                            ))
+                          ) : (
+                            <p className="text-sm text-neutral-500 dark:text-neutral-400">
+                              Recent standout content was not available from the latest fetch.
+                            </p>
+                          )}
+                        </div>
+                      </div>
+
+                      <div className="grid gap-4 md:grid-cols-2">
+                        <div>
+                          <p className="mb-2 text-sm font-medium text-neutral-800 dark:text-neutral-200">
+                            Top hashtags
+                          </p>
+                          <div className="flex flex-wrap gap-2">
+                            {account.performance.topHashtags.length > 0 ? (
+                              account.performance.topHashtags.slice(0, 6).map((tag) => (
+                                <Badge key={tag} variant="secondary">
+                                  #{tag}
+                                </Badge>
+                              ))
+                            ) : (
+                              <p className="text-sm text-neutral-500 dark:text-neutral-400">
+                                No recurring hashtags detected yet.
+                              </p>
+                            )}
+                          </div>
+                        </div>
+
+                        <div>
+                          <p className="mb-2 text-sm font-medium text-neutral-800 dark:text-neutral-200">
+                            Quality signals
+                          </p>
+                          <div className="space-y-2 text-sm text-neutral-600 dark:text-neutral-300">
+                            {account.audienceQualitySignals.signals.map((signal) => (
+                              <div key={signal} className="flex items-start gap-2">
+                                <Activity className="mt-0.5 h-4 w-4 text-primary-500" />
+                                <span>{signal}</span>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+
+              <div className="grid gap-4 xl:grid-cols-2">
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Current insights</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-3">
+                    {latestHeroReport.insights.map((insight) => (
+                      <div
+                        key={insight}
+                        className="rounded-xl border border-neutral-200/80 p-3 text-sm dark:border-white/10"
+                      >
+                        {insight}
+                      </div>
+                    ))}
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Recommended next moves</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-3">
+                    {latestHeroReport.recommendations.map((recommendation) => (
+                      <div
+                        key={recommendation}
+                        className="rounded-xl border border-neutral-200/80 p-3 text-sm dark:border-white/10"
+                      >
+                        {recommendation}
+                      </div>
+                    ))}
+                  </CardContent>
+                </Card>
+              </div>
+
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between">
+                  <div>
+                    <CardTitle>History</CardTitle>
+                    <CardDescription>
+                      Each manual server update is saved so the analysis does not get lost.
+                    </CardDescription>
+                  </div>
+                  <Badge variant="secondary">{heroHistory.length} saved</Badge>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  {heroHistory.map((report) => (
+                    <div
+                      key={report.id}
+                      className="flex flex-col gap-2 rounded-xl border border-neutral-200/80 p-4 dark:border-white/10 sm:flex-row sm:items-center sm:justify-between"
+                    >
+                      <div>
+                        <p className="font-medium text-neutral-900 dark:text-white">
+                          {new Date(report.createdAt).toLocaleString()}
+                        </p>
+                        <p className="text-sm text-neutral-500 dark:text-neutral-400">
+                          {report.accounts
+                            .map((account) => `${account.platform} @${account.handle}`)
+                            .join(" • ")}
+                        </p>
+                      </div>
+                      <Badge variant="outline">
+                        {report.accounts.length} account
+                        {report.accounts.length === 1 ? "" : "s"}
+                      </Badge>
+                    </div>
+                  ))}
+                </CardContent>
+              </Card>
+            </div>
+          ) : (
+            <div className="rounded-xl border border-dashed border-neutral-300 p-6 text-sm text-neutral-500 dark:border-neutral-700 dark:text-neutral-400">
+              No hero account snapshots yet. Add your handle and run your first server update.
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
       <StatCardGrid columns={4}>
         <StatCard
           title="Total Audience"
           value="12.5K"
-          trend={{ value: 12.5, label: 'vs last period', direction: 'up' }}
+          trend={{ value: 12.5, label: "vs last period", direction: "up" }}
           icon={<Users className="h-5 w-5" />}
           iconColor="primary"
         />
         <StatCard
           title="Comments Analyzed"
-          value={overview.totalComments.toLocaleString()}
-          trend={{ value: 8.3, label: 'vs last period', direction: 'up' }}
+          value={overview?.totalComments?.toLocaleString() ?? "0"}
+          trend={{ value: 8.3, label: "vs last period", direction: "up" }}
           icon={<MessageSquare className="h-5 w-5" />}
           iconColor="success"
         />
         <StatCard
           title="Avg. Sentiment"
-          value={`${(overview.sentimentAnalysis.overall.compound * 100).toFixed(0)}%`}
-          trend={{ value: 5.2, label: 'vs last period', direction: 'up' }}
+          value={
+            overview
+              ? `${(overview.sentimentAnalysis.overall.compound * 100).toFixed(0)}%`
+              : "0%"
+          }
+          trend={{ value: 5.2, label: "vs last period", direction: "up" }}
           icon={<Heart className="h-5 w-5" />}
-          iconColor={overview.sentimentAnalysis.overall.compound > 0 ? 'success' : 'warning'}
+          iconColor={
+            overview && overview.sentimentAnalysis.overall.compound > 0
+              ? "success"
+              : "warning"
+          }
         />
         <StatCard
           title="Engagement Rate"
           value="4.8%"
-          trend={{ value: 2.1, label: 'vs last period', direction: 'up' }}
+          trend={{ value: 2.1, label: "vs last period", direction: "up" }}
           icon={<TrendingUp className="h-5 w-5" />}
           iconColor="primary"
         />
       </StatCardGrid>
-      
-      {/* Main Content Tabs */}
+
       <Tabs defaultValue="overview" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-4 lg:w-auto">
+        <TabsList className="grid w-full grid-cols-2 lg:w-auto">
           <TabsTrigger value="overview">Overview</TabsTrigger>
-          <TabsTrigger value="sentiment">Sentiment</TabsTrigger>
-          <TabsTrigger value="demographics">Demographics</TabsTrigger>
-          <TabsTrigger value="engagement">Engagement</TabsTrigger>
+          <TabsTrigger value="notes">Notes</TabsTrigger>
         </TabsList>
-        
-        {/* Overview Tab */}
-        <TabsContent value="overview" className="space-y-6">
-          <AudienceOverviewCard overview={overview} />
-          
-          <div className="grid gap-6 lg:grid-cols-2">
-            <Card>
-              <CardHeader>
-                <CardTitle>Sentiment Trend</CardTitle>
-                <CardDescription>How audience sentiment has changed over time</CardDescription>
-              </CardHeader>
-              <CardContent>
-                {trends && <SentimentTimeline data={trends} height={250} />}
-              </CardContent>
-            </Card>
-            
-            <Card>
-              <CardHeader>
-                <CardTitle>Keyword Cloud</CardTitle>
-                <CardDescription>Most mentioned terms in audience conversations</CardDescription>
-              </CardHeader>
-              <CardContent>
-                {wordCloudData && (
-                  <KeywordCloud data={wordCloudData} onWordClick={(word) => console.log(word)} />
-                )}
-              </CardContent>
-            </Card>
-          </div>
-          
-          {/* Quick Links */}
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            <QuickLinkCard
-              title="Sentiment Analysis"
-              description="Deep dive into sentiment metrics"
-              href="/dashboard/audience/sentiment"
-              icon={<BarChart3 className="h-5 w-5" />}
-            />
-            <QuickLinkCard
-              title="Comment Analysis"
-              description="Browse and filter all comments"
-              href="/dashboard/audience/comments"
-              icon={<MessageSquare className="h-5 w-5" />}
-            />
-            <QuickLinkCard
-              title="Demographics"
-              description="Age, location & interests"
-              href="/dashboard/audience#demographics"
-              icon={<Globe className="h-5 w-5" />}
-            />
-            <QuickLinkCard
-              title="Best Times"
-              description="Optimal posting schedules"
-              href="/dashboard/audience#engagement"
-              icon={<Clock className="h-5 w-5" />}
-            />
-          </div>
-        </TabsContent>
-        
-        {/* Sentiment Tab */}
-        <TabsContent value="sentiment" className="space-y-6">
-          <div className="grid gap-6 lg:grid-cols-3">
-            <Card className="lg:col-span-1">
-              <CardHeader>
-                <CardTitle>Sentiment Gauge</CardTitle>
-                <CardDescription>Overall audience sentiment score</CardDescription>
-              </CardHeader>
-              <CardContent className="flex justify-center">
-                <SentimentGauge
-                  value={overview.sentimentAnalysis.overall.compound}
-                  size="lg"
-                  showLabels
-                />
-              </CardContent>
-            </Card>
-            
-            <Card className="lg:col-span-2">
-              <CardHeader>
-                <CardTitle>Sentiment Breakdown</CardTitle>
-                <CardDescription>Distribution across all analyzed content</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-6">
-                  <div className="grid gap-4 sm:grid-cols-3">
-                    <SentimentMetricCard
-                      label="Positive"
-                      value={overview.sentimentAnalysis.overall.positive}
-                      color="bg-emerald-500"
-                      icon="😊"
-                    />
-                    <SentimentMetricCard
-                      label="Neutral"
-                      value={overview.sentimentAnalysis.overall.neutral}
-                      color="bg-amber-400"
-                      icon="😐"
-                    />
-                    <SentimentMetricCard
-                      label="Negative"
-                      value={overview.sentimentAnalysis.overall.negative}
-                      color="bg-red-500"
-                      icon="😞"
-                    />
-                  </div>
-                  
-                  {/* By Platform */}
-                  <div className="border-t border-neutral-200 pt-4 dark:border-neutral-800">
-                    <h4 className="mb-3 text-sm font-medium">By Platform</h4>
-                    <div className="space-y-3">
-                      {Object.entries(overview.sentimentAnalysis.byPlatform).map(([platform, sentiment]) => (
-                        <div key={platform} className="flex items-center justify-between">
-                          <span className="capitalize text-neutral-600 dark:text-neutral-400">{platform}</span>
-                          <div className="flex items-center gap-2">
-                            <div className="flex h-2 w-32 overflow-hidden rounded-full bg-neutral-100 dark:bg-neutral-800">
-                              <div className="bg-emerald-500" style={{ width: `${sentiment.positive}%` }} />
-                              <div className="bg-amber-400" style={{ width: `${sentiment.neutral}%` }} />
-                              <div className="bg-red-500" style={{ width: `${sentiment.negative}%` }} />
-                            </div>
-                            <span className="w-12 text-right text-sm font-medium">
-                              {(sentiment.compound * 100).toFixed(0)}%
-                            </span>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-          
+
+        <TabsContent value="overview">
           <Card>
             <CardHeader>
-              <CardTitle>Sentiment Timeline</CardTitle>
-              <CardDescription>Track sentiment changes over time</CardDescription>
+              <CardTitle>Audience overview</CardTitle>
+              <CardDescription>
+                This section is still using the existing audience insight pipeline while hero-account analytics now runs from live server updates.
+              </CardDescription>
             </CardHeader>
-            <CardContent>
-              {trends && <SentimentTimeline data={trends} showAreas height={300} />}
+            <CardContent className="grid gap-4 md:grid-cols-3">
+              <InfoPill
+                icon={<MessageSquare className="h-4 w-4" />}
+                title="Comment analysis"
+                description="Sentiment and keyword extraction are available from the audience module."
+              />
+              <InfoPill
+                icon={<Clock3 className="h-4 w-4" />}
+                title="Historical snapshots"
+                description="Every manual hero analysis is saved in report history instead of being overwritten."
+              />
+              <InfoPill
+                icon={<ShieldCheck className="h-4 w-4" />}
+                title="Heuristic quality signals"
+                description="Audience quality is expressed as a confidence-style score, not a fake exact bot percentage."
+              />
             </CardContent>
           </Card>
         </TabsContent>
-        
-        {/* Demographics Tab */}
-        <TabsContent value="demographics" className="space-y-6">
-          {demographics && (
-            <>
-              <div className="grid gap-6 lg:grid-cols-2">
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Age Distribution</CardTitle>
-                    <CardDescription>Breakdown by age groups</CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <AgeDistributionChart data={demographics.ageRanges} />
-                  </CardContent>
-                </Card>
-                
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Geographic Distribution</CardTitle>
-                    <CardDescription>Top countries by audience</CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <GeographicChart data={demographics.countries} />
-                  </CardContent>
-                </Card>
-              </div>
-              
-              <div className="grid gap-6 lg:grid-cols-3">
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Interests</CardTitle>
-                    <CardDescription>Top audience interests</CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-2">
-                      {demographics.interests.slice(0, 8).map((interest) => (
-                        <div key={interest.name} className="flex items-center justify-between">
-                          <span className="text-sm">{interest.name}</span>
-                          <div className="flex items-center gap-2">
-                            <div className="h-2 w-24 overflow-hidden rounded-full bg-neutral-100 dark:bg-neutral-800">
-                              <div
-                                className={`h-full rounded-full ${
-                                  interest.affinity === 'high' ? 'bg-emerald-500' :
-                                  interest.affinity === 'medium' ? 'bg-blue-500' : 'bg-neutral-400'
-                                }`}
-                                style={{ width: `${interest.score}%` }}
-                              />
-                            </div>
-                            <span className="w-8 text-right text-xs text-neutral-500">{interest.score}</span>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </CardContent>
-                </Card>
-                
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Gender</CardTitle>
-                    <CardDescription>Audience gender distribution</CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    {demographics.gender && (
-                      <div className="space-y-4">
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-2">
-                            <div className="h-3 w-3 rounded-full bg-pink-500" />
-                            <span>Female</span>
-                          </div>
-                          <span className="font-medium">{demographics.gender.female}%</span>
-                        </div>
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-2">
-                            <div className="h-3 w-3 rounded-full bg-blue-500" />
-                            <span>Male</span>
-                          </div>
-                          <span className="font-medium">{demographics.gender.male}%</span>
-                        </div>
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-2">
-                            <div className="h-3 w-3 rounded-full bg-purple-500" />
-                            <span>Other</span>
-                          </div>
-                          <span className="font-medium">{demographics.gender.other}%</span>
-                        </div>
-                        <div className="h-4 overflow-hidden rounded-full bg-neutral-100 dark:bg-neutral-800">
-                          <div className="flex h-full">
-                            <div className="bg-pink-500" style={{ width: `${demographics.gender.female}%` }} />
-                            <div className="bg-blue-500" style={{ width: `${demographics.gender.male}%` }} />
-                            <div className="bg-purple-500" style={{ width: `${demographics.gender.other}%` }} />
-                          </div>
-                        </div>
-                      </div>
-                    )}
-                  </CardContent>
-                </Card>
-                
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Devices</CardTitle>
-                    <CardDescription>Device usage breakdown</CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    {demographics.devices && (
-                      <div className="space-y-3">
-                        {Object.entries(demographics.devices).map(([device, percentage]) => (
-                          <div key={device} className="flex items-center justify-between rounded-lg border border-neutral-200 p-3 dark:border-neutral-800">
-                            <div className="flex items-center gap-2">
-                              {device === 'Mobile' ? (
-                                <svg className="h-5 w-5 text-neutral-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" />
-                                </svg>
-                              ) : device === 'Desktop' ? (
-                                <svg className="h-5 w-5 text-neutral-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-                                </svg>
-                              ) : (
-                                <svg className="h-5 w-5 text-neutral-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 18h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
-                                </svg>
-                              )}
-                              <span>{device}</span>
-                            </div>
-                            <span className="font-medium">{percentage}%</span>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </CardContent>
-                </Card>
-              </div>
-            </>
-          )}
-        </TabsContent>
-        
-        {/* Engagement Tab */}
-        <TabsContent value="engagement" className="space-y-6">
-          {peakEngagement && (
-            <>
-              <div className="grid gap-6 lg:grid-cols-2">
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Peak Engagement Hours</CardTitle>
-                    <CardDescription>When your audience is most active</CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <PeakEngagementChart data={peakEngagement} />
-                  </CardContent>
-                </Card>
-                
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Best Times Summary</CardTitle>
-                    <CardDescription>Optimal posting recommendations</CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <BestTimesSummary data={peakEngagement} />
-                  </CardContent>
-                </Card>
-              </div>
-              
-              <Card>
-                <CardHeader>
-                  <CardTitle>Engagement Insights</CardTitle>
-                  <CardDescription>AI-generated recommendations</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                    <InsightCard
-                      icon={<Clock className="h-5 w-5" />}
-                      title="Optimal Posting Time"
-                      description={`Schedule important content at ${peakEngagement.bestHours[0]}:00 for maximum reach`}
-                      color="blue"
-                    />
-                    <InsightCard
-                      icon={<Calendar className="h-5 w-5" />}
-                      title="Best Day"
-                      description={`${peakEngagement.bestDays[0]}s show highest engagement rates`}
-                      color="emerald"
-                    />
-                    <InsightCard
-                      icon={<Zap className="h-5 w-5" />}
-                      title="Peak Engagement"
-                      description={`Engagement is ${Math.round((peakEngagement.hourlyDistribution.find(h => h.hour === peakEngagement.bestHours[0])?.engagement || 0) / 10)}x higher during peak hours`}
-                      color="amber"
-                    />
-                  </div>
-                </CardContent>
-              </Card>
-            </>
-          )}
+
+        <TabsContent value="notes">
+          <Card>
+            <CardHeader>
+              <CardTitle>Current scope</CardTitle>
+              <CardDescription>
+                Hero account analytics is now connected to the live profile scrapers for manual refreshes.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-3 text-sm text-neutral-600 dark:text-neutral-300">
+              <p>Instagram analysis covers follower counts, posting cadence, average engagement, strongest hashtags, and standout posts.</p>
+              <p>TikTok analysis covers followers, views, likes, comments, shares, strongest hashtags, and standout videos.</p>
+              <p>The page keeps history at the report level so each refresh is saved and reviewable later.</p>
+            </CardContent>
+          </Card>
         </TabsContent>
       </Tabs>
     </PageContent>
   );
 }
 
-// Helper Components
-
-function QuickLinkCard({
-  title,
-  description,
-  href,
-  icon,
-}: {
-  title: string;
-  description: string;
-  href: string;
-  icon: React.ReactNode;
-}) {
-  return (
-    <a
-      href={href}
-      className="group flex items-center justify-between rounded-lg border border-neutral-200 p-4 transition-all hover:border-blue-300 hover:shadow-sm dark:border-neutral-800 dark:hover:border-blue-700"
-    >
-      <div className="flex items-center gap-3">
-        <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400">
-          {icon}
-        </div>
-        <div>
-          <h3 className="font-medium text-neutral-900 dark:text-white">{title}</h3>
-          <p className="text-sm text-neutral-500">{description}</p>
-        </div>
-      </div>
-      <ChevronRight className="h-5 w-5 text-neutral-400 transition-transform group-hover:translate-x-1" />
-    </a>
-  );
+function formatCompactNumber(value: number) {
+  return new Intl.NumberFormat("en", {
+    notation: "compact",
+    maximumFractionDigits: 1,
+  }).format(value);
 }
 
-function SentimentMetricCard({
+function MetricPill({
   label,
   value,
-  color,
-  icon,
 }: {
   label: string;
-  value: number;
-  color: string;
-  icon: string;
+  value: string;
 }) {
   return (
-    <div className="rounded-lg border border-neutral-200 p-4 text-center dark:border-neutral-800">
-      <div className="text-2xl">{icon}</div>
-      <p className="mt-2 text-2xl font-bold">{value}%</p>
-      <p className="text-sm text-neutral-500">{label}</p>
-      <div className="mt-3 h-2 overflow-hidden rounded-full bg-neutral-100 dark:bg-neutral-800">
-        <div className={`h-full ${color}`} style={{ width: `${value}%` }} />
-      </div>
+    <div className="rounded-xl border border-neutral-200/80 bg-black/5 p-3 dark:border-white/10 dark:bg-white/5">
+      <p className="text-[11px] uppercase tracking-[0.12em] text-neutral-500 dark:text-neutral-400">
+        {label}
+      </p>
+      <p className="mt-1 font-mono text-lg font-semibold text-neutral-900 dark:text-white">
+        {value}
+      </p>
     </div>
   );
 }
 
-function InsightCard({
+function InfoPill({
   icon,
   title,
   description,
-  color,
 }: {
-  icon: React.ReactNode;
+  icon: ReactNode;
   title: string;
   description: string;
-  color: 'blue' | 'emerald' | 'amber' | 'red';
 }) {
-  const colorClasses = {
-    blue: 'bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400',
-    emerald: 'bg-emerald-100 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400',
-    amber: 'bg-amber-100 text-amber-600 dark:bg-amber-900/30 dark:text-amber-400',
-    red: 'bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400',
-  };
-  
   return (
-    <div className="flex items-start gap-3 rounded-lg border border-neutral-200 p-4 dark:border-neutral-800">
-      <div className={`flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-lg ${colorClasses[color]}`}>
+    <div className="rounded-xl border border-neutral-200/80 p-4 dark:border-white/10">
+      <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-lg bg-primary-100 text-primary-600 dark:bg-primary-900/30 dark:text-primary-400">
         {icon}
       </div>
-      <div>
-        <h4 className="font-medium text-neutral-900 dark:text-white">{title}</h4>
-        <p className="mt-1 text-sm text-neutral-500">{description}</p>
-      </div>
+      <p className="font-medium text-neutral-900 dark:text-white">{title}</p>
+      <p className="mt-1 text-sm text-neutral-500 dark:text-neutral-400">{description}</p>
     </div>
   );
 }
